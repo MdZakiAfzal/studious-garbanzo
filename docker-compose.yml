@@ -3,36 +3,25 @@ version: '3.8'
 services:
   api:
     build: .
-    container_name: whatsapp_node_api
+    container_name: node_api
     restart: always
     ports:
       - "3000:3000"
     environment:
       - PORT=3000
-      - MONGO_URI=mongodb://mongo:27017/whatsapp_saas
+      # Docker will pull MONGO_URI and VERIFY_TOKEN straight from your .env file automatically
+      - MONGO_URI=${MONGO_URI}
       - REDIS_URL=redis://redis:6379
-      - VERIFY_TOKEN=blue_panda_123
+      - VERIFY_TOKEN=${VERIFY_TOKEN}
     volumes:
-      # Syncs your local code changes directly into the container instantly
       - .:/usr/src/app
-      # Prevents local node_modules from overwriting the container's modules
       - /usr/src/app/node_modules
     depends_on:
-      - mongo
-      - redis
-
-  mongo:
-    image: mongo:6.0
-    container_name: whatsapp_mongo_db
-    restart: always
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
+      - redis  # <-- Notice 'mongo' is gone from here!
 
   redis:
     image: redis:7.0-alpine
-    container_name: whatsapp_redis_cache
+    container_name: redis
     restart: always
     ports:
       - "6379:6379"
@@ -40,5 +29,4 @@ services:
       - redis_data:/data
 
 volumes:
-  mongo_data:
   redis_data:
