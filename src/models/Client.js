@@ -10,6 +10,7 @@ const clientSchema = new mongoose.Schema({
         required: true, 
         unique: true 
     }, // Meta's unique ID for the boutique's phone number
+    wabaId: { type: String, required: true },
     accessToken: { 
         type: String, 
         required: true 
@@ -21,7 +22,39 @@ const clientSchema = new mongoose.Schema({
     isActive: { 
         type: Boolean, 
         default: true 
-    }
+    },
+    // --- THE DYNAMIC BRAIN ---
+    botFlow: [{
+        trigger: { type: String, required: true }, // e.g., "DEFAULT", "pricing", "btn_support"
+        responseType: { 
+            type: String, 
+            enum: ['text', 'button', 'list', 'image'], 
+            required: true 
+        },
+        
+        // Used for Text, Image Captions, and the main body of Buttons/Lists
+        messageText: String, 
+        
+        // Used ONLY for 'image' type
+        mediaUrl: String, 
+        
+        // Used ONLY for 'button' type (Max 3 buttons)
+        buttons: [{ 
+            id: String, 
+            title: String 
+        }], 
+
+        // Used ONLY for 'list' type (Max 10 rows total)
+        listMenuText: String, // The text on the actual menu button (e.g., "View Options")
+        listSections: [{
+            title: String, // e.g., "Main Courses"
+            rows: [{ 
+                id: String, 
+                title: String, 
+                description: String 
+            }]
+        }]
+    }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Client', clientSchema);

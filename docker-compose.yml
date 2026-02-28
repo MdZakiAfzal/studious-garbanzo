@@ -13,6 +13,8 @@ services:
       - MONGO_URI=${MONGO_URI}
       - REDIS_URL=redis://redis:6379
       - VERIFY_TOKEN=${VERIFY_TOKEN}
+      - META_ACCESS_TOKEN=${META_ACCESS_TOKEN}  # <--- Ensure this is here
+      - META_PHONE_ID=${META_PHONE_ID}          # <--- Ensure this is here
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
