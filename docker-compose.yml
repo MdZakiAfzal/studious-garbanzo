@@ -7,19 +7,17 @@ services:
     restart: always
     ports:
       - "3000:3000"
+    # 👇 THIS IS THE MAGIC FIX 👇
+    env_file:
+      - .env
     environment:
       - PORT=3000
-      # Docker will pull MONGO_URI and VERIFY_TOKEN straight from your .env file automatically
-      - MONGO_URI=${MONGO_URI}
       - REDIS_URL=redis://redis:6379
-      - VERIFY_TOKEN=${VERIFY_TOKEN}
-      - META_ACCESS_TOKEN=${META_ACCESS_TOKEN}  # <--- Ensure this is here
-      - META_PHONE_ID=${META_PHONE_ID}          # <--- Ensure this is here
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
     depends_on:
-      - redis  # <-- Notice 'mongo' is gone from here!
+      - redis
 
   redis:
     image: redis:7.0-alpine

@@ -24,11 +24,12 @@ const clientSchema = new mongoose.Schema({
         default: true 
     },
     // --- THE DYNAMIC BRAIN ---
-    botFlow: [{
+    botFlow: [{ type: mongoose.Schema.Types.Mixed }]
+    /*botFlow: [{
         trigger: { type: String, required: true }, // e.g., "DEFAULT", "pricing", "btn_support"
         responseType: { 
             type: String, 
-            enum: ['text', 'button', 'list', 'image'], 
+            enum: ['text', 'image', 'button', 'list', 'carousel', 'location'], 
             required: true 
         },
         
@@ -54,7 +55,7 @@ const clientSchema = new mongoose.Schema({
                 description: String 
             }]
         }]
-    }]
+    }]*/
 }, { timestamps: true });
 
 module.exports = mongoose.model('Client', clientSchema);

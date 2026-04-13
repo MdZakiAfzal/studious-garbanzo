@@ -66,6 +66,14 @@ const sendDynamicMessage = async (phoneNumberId, accessToken, to, rule) => {
                     action: { buttons: formattedButtons }
                 }
             };
+
+            // 👇 INJECT THE IMAGE HEADER IF IT EXISTS 👇
+            if (rule.mediaUrl) {
+                payload.interactive.header = {
+                    type: 'image',
+                    image: { link: rule.mediaUrl }
+                };
+            }
             break;
 
         case 'list':
@@ -90,7 +98,77 @@ const sendDynamicMessage = async (phoneNumberId, accessToken, to, rule) => {
                 }
             };
             break;
-            
+        case 'location':
+            // 1. Log exactly what the database gave us so you can debug later
+            console.log("📍 DEBUG - Rule from DB:", rule);
+
+            // 2. THE DEMO SAVIOR: If DB is empty, force the WSS Couture coordinates
+            const finalLat = rule.latitude ? parseFloat(rule.latitude) : 22.7051;
+            const finalLng = rule.longitude ? parseFloat(rule.longitude) : 75.8647;
+
+            payload = {
+                type: 'location',
+                location: {
+                    latitude: finalLat,
+                    longitude: finalLng,
+                    name: rule.locationName || "WSS Couture Studio",
+                    address: rule.locationAddress || "22-B Prem Nagar, Manik Bagh Road, Indore, MP 452010"
+                }
+            };
+            break;
+
+        case 'carousel':
+            payload = {
+                type: 'interactive',
+                interactive: {
+                    type: 'carousel',
+                    body: {
+                        text: rule.messageText || "✨ Swipe to explore our collections"
+                    },
+                    action: {
+                        cards: rule.cards.map((card, index) => ({
+                            card_index: index,
+                            type: 'cta_url', // 👈 Matching Meta's official docs exactly
+                            header: {
+                                type: 'image',
+                                image: { link: card.imageUrl }
+                            },
+                            body: {
+                                text: card.text
+                            },
+                            action: {
+                                // Formatting the quick reply buttons exactly per the cURL snippet
+                                buttons: card.buttons.map(btn => ({
+                                    type: 'quick_reply',
+                                    quick_reply: {
+                                        id: btn.id,
+                                        title: btn.title
+                                    }
+                                }))
+                            }
+                        }))
+                    }
+                }
+            };
+            break;
+        case 'address':
+            // Drops the Native WhatsApp Address Form
+            payload = {
+                type: 'interactive',
+                interactive: {
+                    type: 'address_message',
+                    body: {
+                        text: rule.messageText || "Please provide your delivery address."
+                    },
+                    action: {
+                        name: 'address_message',
+                        parameters: {
+                            country: rule.country || "IN" // Defaulting to India for WSS Couture
+                        }
+                    }
+                }
+            };
+            break;
         default:
             throw new Error(`Unsupported responseType: ${rule.responseType}`);
     }
@@ -109,37 +187,33 @@ const sendTextMessage = async (phoneNumberId, accessToken, to, text) => {
     return await sendToMeta(phoneNumberId, accessToken, to, textPayload);
 };
 
-// Sends a pre-approved Meta Template (Can include Images, Variables, and Buttons)
+// A generalized template sender (Handles plain text templates OR image templates)
 const sendTemplateMessage = async (phoneNumberId, accessToken, to, templateName, languageCode = 'en_US', mediaUrl = null) => {
     
-    // Base template structure
     const templatePayload = {
         type: 'template',
         template: {
             name: templateName,
-            language: { code: languageCode },
-            components: []
+            language: { code: languageCode }
         }
     };
 
-    // If you want to send an image in the template header, we inject it here
+    // If the broadcast includes an image, dynamically attach the header component
     if (mediaUrl) {
-        templatePayload.template.components.push({
-            type: 'header',
-            parameters: [
-                {
-                    type: 'image',
-                    image: { link: mediaUrl }
-                }
-            ]
-        });
+        templatePayload.template.components = [
+            {
+                type: 'header',
+                parameters: [
+                    {
+                        type: 'image',
+                        image: { link: mediaUrl }
+                    }
+                ]
+            }
+        ];
     }
 
     return await sendToMeta(phoneNumberId, accessToken, to, templatePayload);
 };
 
-module.exports = {
-    sendDynamicMessage,
-    sendTextMessage,
-    sendTemplateMessage 
-};
+module.exports = { sendDynamicMessage, sendTextMessage, sendTemplateMessage };

@@ -8,5 +8,6 @@ router.post('/broadcast', apiController.sendBroadcast);
 router.put('/clients/:id/flow', apiController.updateBotFlow);
 router.put('/customers/:id/tier', apiController.updateCustomerTier);
 router.get('/templates', apiController.getTemplates);
+router.post('/demo-broadcast', apiController.sendDemoBroadcast);
 
 module.exports = router;

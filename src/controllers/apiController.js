@@ -1,6 +1,6 @@
 const Customer = require('../models/Customer');
 const Client = require('../models/Client');
-const { sendTextMessage, sendTemplateMessage } = require('../services/whatsappService');
+const { sendTextMessage, sendTemplateMessage, sendDynamicMessage } = require('../services/whatsappService');
 const axios = require('axios');
 
 // GET /api/customers - Fetches the tiered database for the dashboard
@@ -100,13 +100,13 @@ const sendBroadcast = async (req, res) => {
                 if (broadcastType === 'template') {
                     // Send an approved template
                     await sendTemplateMessage(
-                        client.phoneNumberId, 
-                        client.accessToken, 
-                        customer.whatsappNumber, 
-                        templateName, 
-                        languageCode || 'en_US',
-                        mediaUrl
-                    );
+                    client.phoneNumberId, 
+                    client.accessToken, 
+                    customer.whatsappNumber, 
+                    templateName, 
+                    languageCode || 'en_US',
+                    mediaUrl
+                );
                 } else {
                     // Send standard text (Only works if 24hr window is open)
                     await sendTextMessage(client.phoneNumberId, client.accessToken, customer.whatsappNumber, messageText);
@@ -209,45 +209,93 @@ const updateCustomerTier = async (req, res) => {
 const getTemplates = async (req, res) => {
     try {
         const { clientId } = req.query;
-
-        if (!clientId) {
-            return res.status(400).json({ success: false, error: 'Missing clientId query parameter' });
-        }
-
+        
+        // Find the client in MongoDB to get their tokens
         const client = await Client.findById(clientId);
-        if (!client || !client.wabaId) {
-            return res.status(404).json({ success: false, error: 'Client or WABA ID not found' });
+        if (!client) {
+            return res.status(404).json({ success: false, message: 'Client not found' });
         }
 
-        // Call the Meta Graph API to get the templates
+        // Fetch ALL details from Meta's Graph API
         const response = await axios({
             method: 'GET',
-            url: `https://graph.facebook.com/v18.0/${client.wabaId}/message_templates`,
+            url: `https://graph.facebook.com/v18.0/${client.wabaId}/message_templates?fields=name,status,category,language,components,id&limit=100`,
             headers: {
                 'Authorization': `Bearer ${client.accessToken}`
             }
         });
 
-        // Meta returns a lot of data. Let's filter only the ones that are approved and ready to send.
-        const approvedTemplates = response.data.data
-            .filter(template => template.status === 'APPROVED')
-            .map(template => ({
-                id: template.id,
-                name: template.name,
-                language: template.language,
-                category: template.category,
-                mediaUrl: template.components?.find(c => c.type === 'MEDIA')?.media?.url || null // Extract media URL if it exists
-            }));
+        // The raw template data from Meta
+        const allTemplates = response.data.data;
 
+        // Throw the entire blueprint back to the frontend
         res.status(200).json({
             success: true,
-            count: approvedTemplates.length,
-            data: approvedTemplates
+            count: allTemplates.length,
+            data: allTemplates
         });
 
     } catch (error) {
-        console.error('❌ API Error (getTemplates):', error.response ? error.response.data : error.message);
-        res.status(500).json({ success: false, error: 'Failed to fetch templates from Meta' });
+        console.error('❌ Error fetching templates:', error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
+        res.status(500).json({ success: false, message: 'Failed to fetch templates' });
+    }
+};
+
+// POST /api/demo-broadcast - The False Broadcast Trick
+// POST /api/demo-broadcast - The False Broadcast Trick (Tiered)
+const sendDemoBroadcast = async (req, res) => {
+    try {
+        const { clientId, tier } = req.body; 
+
+        if (!clientId) return res.status(400).json({ success: false, error: 'Missing clientId' });
+
+        const client = await Client.findById(clientId);
+        if (!client) return res.status(404).json({ success: false, error: 'Client not found' });
+
+        // 1. Find the target audience based on tier
+        const query = { clientId: client._id };
+        if (tier && tier !== 'all') query.tier = tier;
+
+        const targetAudience = await Customer.find(query);
+        if (targetAudience.length === 0) return res.status(404).json({ success: false, error: 'No customers found in this tier' });
+
+        console.log(`🚀 Firing Demo Broadcast to ${targetAudience.length} customers in tier: ${tier || 'all'}`);
+
+        // 2. The "Fake" Template Rule (Using a safe, public image link)
+        // 2. The "Fake" Template Rule (Tailored for WSS Couture)
+        const fakeTemplateRule = {
+            responseType: 'button',
+            messageText: '✨ *EXCLUSIVE VIP ACCESS* ✨\n\nOur highly anticipated Luxury Custom Collection has just dropped! 👗\n\nBecause you are on our VIP list, we are giving you priority access. Claim your slot below to start your custom order!',
+            mediaUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSfLbSgiYWCgv9G4IGCIj8aoFUmkXlBZ9BI9g&s', 
+            buttons: [
+                { id: 'CLAIM_OFFER', title: '👗 Claim Offer' }, // 👈 New Trigger
+                { id: 'VISIT_INSTA', title: '📸 View Collection' }
+            ]
+        };
+
+        let successCount = 0;
+        let failCount = 0;
+
+        // 3. Loop and Blast
+        for (const customer of targetAudience) {
+            try {
+                await sendDynamicMessage(client.phoneNumberId, client.accessToken, customer.whatsappNumber, fakeTemplateRule);
+                successCount++;
+            } catch (err) {
+                failCount++;
+                console.error(`❌ Failed to send to ${customer.whatsappNumber}.`);
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Fake Broadcast Sent!',
+            stats: { total: targetAudience.length, success: successCount, failed: failCount }
+        });
+
+    } catch (error) {
+        console.error('❌ Demo Broadcast Error:', error);
+        res.status(500).json({ success: false, error: 'Failed to send' });
     }
 };
 
@@ -257,5 +305,6 @@ module.exports = {
     sendBroadcast,
     updateBotFlow,
     updateCustomerTier,
-    getTemplates
+    getTemplates,
+    sendDemoBroadcast
 };
