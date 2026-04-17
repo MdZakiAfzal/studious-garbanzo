@@ -263,14 +263,14 @@ const sendDemoBroadcast = async (req, res) => {
 
         // 2. The "Fake" Template Rule (Using a safe, public image link)
         // 2. The "Fake" Template Rule (Tailored for WSS Couture)
-        const fakeTemplateRule = {
-            responseType: 'button',
-            messageText: '✨ *EXCLUSIVE VIP ACCESS* ✨\n\nOur highly anticipated Luxury Custom Collection has just dropped! 👗\n\nBecause you are on our VIP list, we are giving you priority access. Claim your slot below to start your custom order!',
-            mediaUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSfLbSgiYWCgv9G4IGCIj8aoFUmkXlBZ9BI9g&s', 
-            buttons: [
-                { id: 'CLAIM_OFFER', title: '👗 Claim Offer' }, // 👈 New Trigger
-                { id: 'VISIT_INSTA', title: '📸 View Collection' }
-            ]
+        const fakeTemplateRule = { 
+            responseType: 'button', 
+            messageText: '🔥 *VIP WAITLIST OPEN* 🔥\n\nHey! "30 Days, 5 Kgs Down" challenge starts next Monday, and spots are filling up fast! 💪\n\nSince you are on my priority list, I wanted to give you first access to grab your slot. Are you ready to transform?', 
+            mediaUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600&fm=jpg&fit=crop', 
+            buttons: [ 
+                { id: 'BOOK_CONSULT', title: '🔥 Secure My Spot' }, // 👈 Routes perfectly to her booking flow
+                { id: 'CLIENT_REVIEWS', title: '⭐ See Results' }    // 👈 Routes perfectly to her reviews flow
+            ] 
         };
 
         let successCount = 0;

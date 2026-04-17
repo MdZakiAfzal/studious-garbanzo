@@ -26,25 +26,25 @@ const askAI = async (userQuestion, businessName, botFlow) => {
         // 2. The System Prompt
         // 2. The System Prompt (Tailored for WSS Couture)
         const prompt = `
-            You are a smart, luxurious styling assistant for WSS Couture (also known as we_sewsexy) on WhatsApp.
+            You are a supportive, high-energy virtual assistant for Archana Fitness Coach on WhatsApp.
             The user just said: "${userQuestion}"
             
             BUSINESS KNOWLEDGE:
-            - Brand: WSS Couture, a customisation-only clothing brand established in 2016.
-            - Model: "You design, we create." Made-to-order luxury apparel.
-            - Location: 22-B Prem Nagar, Manik Bagh road, Indore, MP 452010.
-            - Hours: Strictly "By Appointment Only" from Monday to Saturday. Closed on Sundays.
-            - Contact: Calls on 8815874745. Email: wesewsexy2@gmail.com.
+            - Brand: Archana Fitness Coach.
+            - Expertise: Certified Weight Loss Coach for Women with 7+ years of experience.
+            - Specialties: 1:1 Online & Offline Training, Postpartum fat loss & strength building.
+            - Authority: 100+ clients transformed. Runs famous "30 Days, 5 Kgs Down" challenges.
+            - Style: You use high energy, encouraging words, and fitness emojis (💪, 🏋️‍♀️, 🔥).
             
             You have the ability to trigger these specific automated interactive menus:
             ${availableFlows}
             (Note: The ID "DEFAULT" always opens the main Welcome Menu).
             
             STRICT RULES:
-            1. Write a friendly, elegant 1-sentence reply using an emoji (like ✨, 👗, or 🤍).
-            2. Match Intent: If the user's request clearly matches one of our automated menus, set "triggerId" to that exact ID.
-            3. ANTI-HALLUCINATION PROTOCOL: You must NEVER guess prices, fabrics, delivery times, or policies. If the user asks a question where the answer is NOT 100% found in the BUSINESS KNOWLEDGE above, you MUST respond with a variation of: "I don't have the exact details on that, but our senior styling team would love to help!" AND you MUST set "triggerId" to "DEFAULT" to instantly show them the menu.
-            4. If it's just a casual greeting or a "thank you", reply politely and set "triggerId" to null.
+            1. Write a friendly, motivating 1-sentence reply.
+            2. Match Intent: If the user's request clearly matches one of our automated menus (like wanting to book a consult, see reviews, or view programs), set "triggerId" to that exact ID.
+            3. ANTI-HALLUCINATION PROTOCOL: You must NEVER invent diet plans, exact pricing, or medical advice. If they ask a complex fitness question, you MUST respond with a variation of: "That is a great question! Archana handles all custom advice during her 1:1 sessions." AND you MUST set "triggerId" to "DEFAULT" to show them the menu.
+            4. If it's just a casual greeting, reply warmly and set "triggerId" to null.
             
             OUTPUT STRICTLY IN THIS JSON FORMAT:
             {
@@ -133,7 +133,7 @@ const receiveMessage = async (req, res) => {
                     // 3. THE TRAFFIC COP (Text vs Buttons)
                     // ----------------------------------------------------
                     if (message.type === 'interactive') {
-                        // THEY CLICKED A BUTTON OR MENU LIST
+                        // THEY CLICKED A STANDARD BUTTON OR MENU LIST
                         let triggerKeyword = '';
                         if (message.interactive.type === 'button_reply') {
                             triggerKeyword = message.interactive.button_reply.id;
@@ -144,20 +144,32 @@ const receiveMessage = async (req, res) => {
                             console.log(`📦 Address received from ${customerPhone}!`);
                             
                             // Send the final Order Confirmation
-                            const confirmText = "✅ *VIP Order Confirmed!*\n\nWe have received your address. Our styling team will review your details and contact you shortly with fabric swatches. Thank you for choosing WSS Couture! ✨";
+                            const confirmText = "✅ *VIP Order Confirmed!*\n\nWe have received your address. Our styling team will review your details and contact you shortly. Thank you! ✨";
                             await sendTextMessage(businessPhoneId, client.accessToken, customerPhone, confirmText);
                             
-                            return res.status(200).send('EVENT_RECEIVED'); // Stop here so the AI doesn't reply
+                            return res.status(200).send('EVENT_RECEIVED'); // Stop here
                         }
 
-                        console.log(`🔘 User clicked button: "${triggerKeyword}"`);
+                        console.log(`🔘 User clicked interactive button: "${triggerKeyword}"`);
 
                         // Find the exact rule and send the Flow
-                        let rule = client.botFlow.find(r => r.trigger === triggerKeyword);
+                        let rule = client.botFlow.find(r => triggerKeyword.startsWith(r.trigger));
                         if (rule) {
                             await sendDynamicMessage(businessPhoneId, client.accessToken, customerPhone, rule);
                         } else {
                             console.log(`🤷 No flow rule found for button: ${triggerKeyword}.`);
+                        }
+
+                    } else if (message.type === 'button') {
+                        // 🛠️ THE CAROUSEL FIX: Carousel & Template buttons route here!
+                        const triggerKeyword = message.button.payload;
+                        console.log(`🔘 User clicked carousel button: "${triggerKeyword}"`);
+
+                        let rule = client.botFlow.find(r => triggerKeyword.startsWith(r.trigger));
+                        if (rule) {
+                            await sendDynamicMessage(businessPhoneId, client.accessToken, customerPhone, rule);
+                        } else {
+                            console.log(`🤷 No flow rule found for carousel button: ${triggerKeyword}.`);
                         }
 
                     } else if (message.type === 'text') {
@@ -174,9 +186,6 @@ const receiveMessage = async (req, res) => {
                             return res.status(200).send('EVENT_RECEIVED'); // Stop here
                         }
 
-                        // --- YOUR AI LOGIC GOES HERE ---
-                        // Keep it brief for the demo so it looks like a real assistant
-                        // --- YOUR AI LOGIC GOES HERE ---
                         console.log(`🧠 Sending question to AI for ${client.businessName}...`);
                         
                         // Pass the user text, business name, AND the client's flow database
@@ -193,6 +202,9 @@ const receiveMessage = async (req, res) => {
                                 await sendDynamicMessage(businessPhoneId, client.accessToken, customerPhone, rule);
                             }
                         }
+                    } else {
+                        // 🚨 BULLETPROOF LOGGING: Catch weird types (images, docs) so it never fails silently
+                        console.log(`⚠️ Unhandled message type received from Meta: ${message.type}`);
                     }
                 }
             }
