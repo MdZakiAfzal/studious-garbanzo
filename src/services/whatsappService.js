@@ -69,9 +69,16 @@ const sendDynamicMessage = async (phoneNumberId, accessToken, to, rule) => {
 
             // 👇 INJECT THE IMAGE HEADER IF IT EXISTS 👇
             if (rule.mediaUrl) {
+                // Check if the URL ends in .pdf to switch the header type
+                const isPdf = rule.mediaUrl.toLowerCase().split('?')[0].endsWith('.pdf');
+                
                 payload.interactive.header = {
-                    type: 'image',
-                    image: { link: rule.mediaUrl }
+                    type: isPdf ? 'document' : 'image',
+                    [isPdf ? 'document' : 'image']: { 
+                        link: rule.mediaUrl,
+                        // Meta requires a filename if it's a document
+                        ...(isPdf && { filename: rule.filename || 'File.pdf' })
+                    }
                 };
             }
             break;
@@ -116,7 +123,16 @@ const sendDynamicMessage = async (phoneNumberId, accessToken, to, rule) => {
                 }
             };
             break;
-
+        case 'document':
+            payload = {
+                type: 'document',
+                document: {
+                    link: rule.mediaUrl,
+                    caption: rule.messageText || '', // Optional text below the PDF
+                    filename: rule.filename || 'Document.pdf'
+                }
+            };
+            break;
         case 'carousel':
             payload = {
                 type: 'interactive',

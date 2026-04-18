@@ -265,11 +265,12 @@ const sendDemoBroadcast = async (req, res) => {
         // 2. The "Fake" Template Rule (Tailored for WSS Couture)
         const fakeTemplateRule = { 
             responseType: 'button', 
-            messageText: '🔥 *VIP WAITLIST OPEN* 🔥\n\nHey! "30 Days, 5 Kgs Down" challenge starts next Monday, and spots are filling up fast! 💪\n\nSince you are on my priority list, I wanted to give you first access to grab your slot. Are you ready to transform?', 
-            mediaUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600&fm=jpg&fit=crop', 
+            messageText: '🌿 *WEEKEND VIBES AT OLD YARD* 🌿\n\nDon\'t let the Kolkata heat ruin your aesthetic. \n\nDrop by this weekend for our Live Music sessions and cool off with a signature Iced Orange Coffee or Watermelon Mint Mojito. 🍹🎶\n\nShow this VIP message at the counter for a complimentary dessert with any two drinks! ✨', 
+             mediaUrl: 'https://images.unsplash.com/photo-1559925393-8be0ec4767c8?fm=jpg&fit=crop&w=600&q=80', 
+            //mediaurl: 'https://imgs.search.brave.com/DhcOymVZaSl9LnDfgXdb7VgMTuCbhPqFhoVdQLna0GU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly90aGVy/ZWFsZm9vZGRpZXRp/dGlhbnMuY29tL3dw/LWNvbnRlbnQvdXBs/b2Fkcy8yMDIwLzA2/L0lNR182NzE3LTY4/M3gxMDI0LmpwZw',
             buttons: [ 
-                { id: 'BOOK_CONSULT', title: '🔥 Secure My Spot' }, // 👈 Routes perfectly to her booking flow
-                { id: 'CLIENT_REVIEWS', title: '⭐ See Results' }    // 👈 Routes perfectly to her reviews flow
+                { id: 'SUMMER_SPECIALS', title: '🍹 Summer Specials' }, 
+                { id: 'LOCATION', title: '📍 Location & Hours' }   
             ] 
         };
 
